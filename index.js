@@ -84,9 +84,9 @@ Client.on("message", async message => {
     } else if (cmd === "scan") {
         console.log("scan:");
         solve = "";            
-        // if (message.member.permissions.missing("ADMINISTRATOR")) return;
+        
         console.log("channel id "+message.channel.id+" "+message.channel.name);
-        // console.log("guild "+message.guild.id+" "+message.guild.name);
+        console.log("guild "+message.guild.id+" "+message.guild.name);
 
         message.guild.members.fetch()
             .then(gmembers => {
@@ -101,12 +101,6 @@ Client.on("message", async message => {
                 message.reply("Playing: "+users.length+"\n"+users.map(u => u.username).join("\n"));
             })
             .catch(console.error);
-
-        // console.log("channels "+message.guild.channels);
-        // const channels = message.guild.channels.cache; //.filter(c => c.type === "voice");
-        // for (const [channelID, channel] in channels) {
-        //      console.log("channel id "+channelId+" "+channel.name);
-        // };
     } else if (cmd === "help") {
         message.author.send("Testbot commands:\n"+
          "init: reset data\n"+
