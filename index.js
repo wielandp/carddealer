@@ -9,7 +9,8 @@ config({
     path: __dirname + "/.env"
 });
 
-var users = [];
+var channels = [];
+var users;
 var solve;
 
 Client.on("ready", () => {
@@ -30,9 +31,12 @@ Client.on("message", async message => {
     const args = message.content.slice(prefix.length).trim().split(/[ \n]+/g);
     const cmd = args.shift().toLowerCase();
     console.log("cmd="+cmd);
-    // if (cmd === "ping") {
-    //     const msg = await message.channel.send(`🏓 pong`);
-    // } else 
+
+    if (!channels[""+message.channel.id]) {     // force string for map
+        channels[""+message.channel.id] = [];
+    }
+    users = channels[""+message.channel.id];    // copy by reference
+
     if (cmd === "list") {
         console.log("list:\n", users.map(u => u.username).join("\n"));            
         message.reply("Playing: "+users.length+"\n"+users.map(u => u.username).join("\n"));
