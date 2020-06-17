@@ -11,6 +11,7 @@ Simple Discord bot example to run yourself
 - get OAuth2-URL (scope bot) from same site and open it in browser to invite bot
 - rename .env-sample to .env and insert your bot-token
 - run: node index.js
+    or node .
 
 # Usage
 - send "!scan" in any channel of your invited guild. Returns list of users

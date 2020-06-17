@@ -9,7 +9,7 @@ config({
     path: __dirname + "/.env"
 });
 
-var channels = [];
+var channels = [];  // map channel => { users: [], solve: string }
 var users;
 var solve;
 
@@ -22,37 +22,63 @@ Client.on("message", async message => {
     const prefix = "!";
 
     if (message.author.bot) return;
-    if (!message.guild) {
-        console.log("direct message");
-        message.reply("Testbox sending any/random args to random players. Send \""+prefix+"help\" in channel with Testbot");
-        return;
-    }
-    if (!message.content.startsWith(prefix)) return;
+
+    console.log("content="+message.content);
     const args = message.content.slice(prefix.length).trim().split(/[ \n]+/g);
     const cmd = args.shift().toLowerCase();
     console.log("cmd="+cmd);
 
-    if (!channels[""+message.channel.id]) {     // force string for map
-        channels[""+message.channel.id] = [];
+    if (!message.guild) {   // not to channel? so direct
+        console.log("direct message");
+        if (!message.content.startsWith(prefix)) {
+            message.reply("Testbox sending any/random args to random players. Send \""+prefix+"help\" in channel with Testbot");
+            return;
+        }
+
+        if (cmd === "hide") {
+            console.log("hide: ", args.join(" "));
+            message.reply("Got: "+args.join(" "));
+
+            for (const [channel, ci] of Object.entries(channels)) {
+                console.log(channel, ci);
+                ci.users.forEach(user => {
+                    console.log("user: ", user);
+                    console.log("userid: ", user.id);
+                    if (user.id == message.author.id) {
+                        ci.solve = ci.solve + "@"+user.username+": " +args.join(" ")+"\n";
+                    }
+                });
+            }
+        }
+        return;
     }
-    users = channels[""+message.channel.id];    // copy by reference
+
+    // channel message
+    if (!message.content.startsWith(prefix)) return;       // ignore if not cmd
+
+    var ci = channels[""+message.channel.id];
+    if (!ci) {     // force string for map
+        ci = channels[""+message.channel.id] = { users: [], solve: "" };    // create if new
+    }
+    // users = ci.users;    // copy by reference
+    // solve = ci.solve;    // copy by reference
 
     if (cmd === "list") {
-        console.log("list:\n", users.map(u => u.username).join("\n"));            
-        message.reply("Playing: "+users.length+"\n"+users.map(u => u.username).join("\n"));
+        console.log("list:\n", ci.users.map(u => u.username).join("\n"));
+        message.reply("Playing: "+ci.users.length+"\n"+ci.users.map(u => u.username).join("\n"));
     } else if (cmd === "publish") {
-        message.reply("Solution: "+users.length+"\n"+solve);
+        message.reply("Solution: "+ci.users.length+"\n"+ci.solve);
     } else if (cmd === "init") {
         console.log("init: ");
-        users = [];
-        solve = "";            
+        ci.users = [];
+        ci.solve = "";
     } else if (cmd === "remove") {
         console.log("remove: ", args[0]);
         var patt = new RegExp(args[0]);
-        users = users.filter( e => patt.exec(e.username) === null);
+        ci.users = ci.users.filter( e => patt.exec(e.username) === null);
     } else if (cmd === "send") {
-        solve = "";            
-        var uc = users.slice(); // make a copy of users
+        ci.solve = "";
+        var uc = ci.users.slice(); // make a copy of users
         while (uc.length > 0) { // while any users left
             ux = Math.floor(Math.random() * uc.length); // pic a random user
             console.log("username: "+uc[ux].username);
@@ -62,12 +88,12 @@ Client.on("message", async message => {
                 args.splice(0, 1);
             }
             uc[ux].send("Message from bot:\n"+msg);
-            solve = solve + "@"+uc[ux].username+": " + msg+"\n";            
+            ci.solve = ci.solve + "@"+uc[ux].username+": " + msg+"\n";
             uc.splice(ux, 1);
         }
     } else if (cmd === "sendrand") {
-        solve = "";            
-        var uc = users.slice(); // make a copy of users
+        ci.solve = "";
+        var uc = ci.users.slice(); // make a copy of users
         while (uc.length > 0) { // while any users left
             ux = Math.floor(Math.random() * uc.length); // pic a random user
             console.log("username: "+uc[ux].username);
@@ -78,12 +104,12 @@ Client.on("message", async message => {
                 args.splice(ax, 1);
             }
             uc[ux].send("Message from bot:\n"+msg);
-            solve = solve + "@"+uc[ux].username+": " + msg;            
+            ci.solve = ci.solve + "@"+uc[ux].username+": " + msg;
             uc.splice(ux, 1);
         }
     } else if (cmd === "scan") {
         console.log("scan:");
-        solve = "";            
+        ci.solve = "";
         
         console.log("channel id "+message.channel.id+" "+message.channel.name);
         console.log("guild "+message.guild.id+" "+message.guild.name);
@@ -94,22 +120,24 @@ Client.on("message", async message => {
                 gmembers.filter(gm => !gm.user.bot && gm.presence.status === 'online')
                     .map(gm => {
                         console.log(gm.user.username);
-                        if (users.findIndex(u => u.username === gm.user.username) < 0) {
-                            users.push(gm.user);
+                        if (ci.users.findIndex(u => u.username === gm.user.username) < 0) {
+                            ci.users.push(gm.user);
                         }
                     });
-                message.reply("Playing: "+users.length+"\n"+users.map(u => u.username).join("\n"));
+                message.reply("Playing: "+ci.users.length+"\n"+ci.users.map(u => u.username).join("\n"));
             })
             .catch(console.error);
     } else if (cmd === "help") {
-        message.author.send("Testbot commands:\n"+
+        message.author.send("Testbot channel commands:\n"+
          "init: reset data\n"+
          "scan: find online users for playing (can run multiple times)\n"+
          "list: show all accepted users\n"+
          "remove: remove users from list (regexp)\n"+
          "send: send args to random users\n"+
          "sendrand: send randomly args to random users\n"+
-         "publish: show list of users:args"
+         "publish: show list of users:args"+
+         "\n\nTestbot direct commands:\n"+
+         "hide: send secret to bot"
         );
     } else {
         message.author.send("Testbot: Unkown command: "+cmd+"\nSend \""+prefix+"\"help for list of commands");
