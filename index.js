@@ -24,7 +24,8 @@ Client.on("message", async message => {
     if (message.author.bot) return;
 
     console.log("content="+message.content);
-    const args = message.content.slice(prefix.length).trim().split(/[ \n]+/g);
+    const args = message.content.slice(prefix.length)
+            .trim().split(/[ \n]+/g);
     const cmd = args.shift().toLowerCase();
     console.log("cmd="+cmd);
 
@@ -45,7 +46,8 @@ Client.on("message", async message => {
                     console.log("user: ", user);
                     console.log("userid: ", user.id);
                     if (user.id == message.author.id) {
-                        ci.solve = ci.solve + "@"+user.username+": " +args.join(" ")+"\n";
+                        ci.solve = ci.solve + "@"+user.username+": "
+                           + args.join(" ")+"\n";
                     }
                 });
             }
@@ -54,14 +56,12 @@ Client.on("message", async message => {
     }
 
     // channel message
-    if (!message.content.startsWith(prefix)) return;       // ignore if not cmd
+    if (!message.content.startsWith(prefix)) return;   // ignore if not cmd
 
     var ci = channels[""+message.channel.id];
     if (!ci) {     // force string for map
         ci = channels[""+message.channel.id] = { users: [], solve: "" };    // create if new
     }
-    // users = ci.users;    // copy by reference
-    // solve = ci.solve;    // copy by reference
 
     if (cmd === "list") {
         console.log("list:\n", ci.users.map(u => u.username).join("\n"));
